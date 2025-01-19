@@ -351,7 +351,9 @@ export default function App() {
         }}
         onPress={handleMapPress} // Handle map press event
         provider={MapView.PROVIDER_GOOGLE}
-        customMapStyle={colorScheme === "dark" ? darkModeStyle : lightModeStyle}
+        customMapStyle={
+          colorScheme === "light" ? darkModeStyle : lightModeStyle
+        }
       >
         {/* Display user current location */}
         <Marker
