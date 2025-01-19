@@ -1,181 +1,87 @@
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { useState } from "react";
-import {
-  Button,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Image,
-  Alert,
-} from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Button, Alert } from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
 
 export default function App() {
-  const [facing, setFacing] = useState("back");
-  const [permission, requestPermission] = useCameraPermissions();
-  const [isCameraVisible, setIsCameraVisible] = useState(false); // New state to manage camera visibility
-  const [photo, setPhoto] = useState(null); // State to store the captured photo
+  // State to store the user's current location
+  const [currentLocation, setCurrentLocation] = useState(null);
 
-  const [scanned, setScanned] = useState(false); // State to store the captured photo
-  const handleOK = () => {
-    console.log("OK button pressed.");
-    setScanned(false); // You can update the state or perform other actions
+  // State to store the location where the user pins
+  const [pinLocation, setPinLocation] = useState(null);
+
+  // Request permission and get current location
+  useEffect(() => {
+    const getLocation = async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission denied",
+          "Location permission is required to access your current location."
+        );
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation(location.coords);
+    };
+
+    getLocation();
+  }, []);
+
+  // Handle map press (to drop a pin)
+  const handleMapPress = (e) => {
+    const coordinate = e.nativeEvent.coordinate;
+    setPinLocation(coordinate);
   };
 
-  const handleBarCodeScanned = async ({ type, data }) => {
-    console.log("barcode scanned");
-    setScanned(true);
-    const message = `Bar code with type ${type} and data ${data} has been scanned!`; // Make sure the message is a string
-
-    await Alert.alert(
-      "Scan Complete",
-      message, // This is now explicitly a string
-
-      [
-        {
-          text: "Cancel", // This button triggers handleCancel
-          onPress: handleOK,
-          style: "cancel", // Optional styling
-        },
-        {
-          text: "OK", // This button triggers handleOK
-          onPress: handleOK,
-        },
-      ]
-    );
-  };
-  if (!permission) {
-    // Camera permissions are still loading.
-    return <View />;
-  }
-
-  if (!permission.granted) {
-    // Camera permissions are not granted yet.
-    return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: "center" }}>
-          We need your permission to show the camera
-        </Text>
-        <Button onPress={requestPermission} title="Grant Permission" />
-      </View>
-    );
-  }
-
-  function toggleCameraFacing() {
-    setFacing((current) => (current === "back" ? "front" : "back"));
-  }
-
-  function toggleCameraVisibility() {
-    setIsCameraVisible((prev) => !prev); // Toggle the camera visibility
-  }
-
-  // Function to capture a photo
-  const takePhoto = async () => {
-    console.log("photo taken");
-    if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync();
-      setPhoto(photo.uri); // Store the photo URI in the state
-
-      takePicture = () => {
-        if (this.camera) {
-          this.camera.takePictureAsync({ onPictureSaved: this.onPictureSaved });
-        }
-      };
-
-      onPictureSaved = (photo) => {
-        console.log(photo);
-      };
+  // Handle button press for alert
+  const handleMarkLocation = () => {
+    if (pinLocation) {
+      Alert.alert(
+        "Pinned Location",
+        `Latitude: ${pinLocation.latitude}, Longitude: ${pinLocation.longitude}`
+      );
+    } else {
+      Alert.alert("No pin dropped", "Please drop a pin on the map first.");
     }
   };
 
+  if (!currentLocation) {
+    return <Text>Loading...</Text>;
+  }
+
   return (
-    <CameraView
-      onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-      barcodeScannerSettings={{
-        barcodeTypes: [
-          "qr",
-          "pdf417",
-          "codabar",
-          "aztec",
-          "datamatrix",
-          "code39",
-        ],
-      }}
-      style={StyleSheet.absoluteFillObject}
-    />
+    <View style={{ flex: 1 }}>
+      <MapView
+        style={{ flex: 1 }}
+        initialRegion={{
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+        onPress={handleMapPress} // Handle map press event
+      >
+        {/* Display user current location */}
+        <Marker
+          coordinate={currentLocation}
+          title="Your Location"
+          pinColor="blue"
+        />
 
-    //   <View style={styles.container}>
-    //     {!isCameraVisible ? (
-    //       // Display a button to open the camera
-    //       <Button onPress={toggleCameraVisibility} title="Open Camera" />
-    //     ) : (
-    //       // Camera view
-    //       <CameraView style={styles.camera} facing={facing}>
-    //         <View style={styles.buttonContainer}>
-    //           <TouchableOpacity
-    //             style={styles.button}
-    //             onPress={toggleCameraFacing}
-    //           >
-    //             <Text style={styles.text}>Flip Camera</Text>
-    //           </TouchableOpacity>
-    //           <TouchableOpacity style={styles.button} onPress={takePhoto}>
-    //             <Text style={styles.text}>Take Photo</Text>
-    //           </TouchableOpacity>
-    //           <TouchableOpacity
-    //             style={styles.button}
-    //             onPress={toggleCameraVisibility}
-    //           >
-    //             <Text style={styles.text}>Close Camera</Text>
-    //           </TouchableOpacity>
-    //         </View>
-    //       </CameraView>
-    //     )}
+        {/* Display the pinned location */}
+        {pinLocation && (
+          <Marker
+            coordinate={pinLocation}
+            title="Pinned Location"
+            pinColor="red"
+          />
+        )}
+      </MapView>
 
-    //     {/* Display the captured photo */}
-    //     {photo && (
-    //       <View style={styles.photoContainer}>
-    //         <Text style={styles.text}>Captured Photo:</Text>
-    //         <Image source={{ uri: photo }} style={styles.photo} />
-    //       </View>
-    //     )}
-    //   </View>
-    // );
+      {/* Button to show alert with pinned location */}
+      <Button title="Show Pinned Location" onPress={handleMarkLocation} />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  camera: {
-    flex: 1,
-    width: "100%",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    margin: 20,
-    backgroundColor: "transparent",
-  },
-  button: {
-    padding: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    borderRadius: 5,
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "white",
-  },
-  photoContainer: {
-    marginTop: 20,
-    alignItems: "center",
-  },
-  photo: {
-    width: 200,
-    height: 200,
-    marginTop: 10,
-  },
-});
