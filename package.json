@@ -16,7 +16,7 @@
     "expo-camera": "~16.0.11",
     "expo-file-system": "~18.0.7",
     "expo-image-manipulator": "^13.0.6",
-    "expo-media-library": "^17.0.5",
+    "expo-media-library": "~17.0.5",
     "expo-permissions": "^14.4.0",
     "expo-qrcode-scanner": "^1.0.6",
     "expo-status-bar": "~2.0.1",
@@ -27,9 +27,10 @@
     "react-native-reanimated": "~3.16.1",
     "react-native-sketch": "^1.1.0",
     "react-native-skia": "^0.0.1",
+    "react-native-svg": "15.8.0",
+    "react-native-view-shot": "^4.0.3",
     "react-native-vision-camera": "^4.6.3",
-    "react-native-webview": "^13.13.1",
-    "react-native-svg": "15.8.0"
+    "react-native-webview": "^13.13.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
